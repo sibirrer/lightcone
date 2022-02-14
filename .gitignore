@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# all stored movies
+notebooks/Movies/*
+
 # C extensions
 *.so
 
