@@ -17,7 +17,7 @@ animated lightcone simulation of gravitational lensing using `lenstronomy <https
 
 
 .. |Read the Docs| image:: https://readthedocs.org/projects/lightcone/badge/?version=latest
-    :target: https://lightcone.readthedocs.io/en/latest/?badge=latest
+    :target: https://lightcone_lenstronomy.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
 .. |GitHub| image:: https://github.com/LSST-strong-lensing/sim-pipeline/workflows/CI/badge.svg
