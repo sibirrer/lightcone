@@ -99,9 +99,15 @@ class Animate(Plot3d):
     def gif(self):
         # build gif
         movie_name = self._folder_path + self._movie_name + ".gif"
-        with imageio.get_writer(movie_name, mode='I') as writer:
-            for filename in self._filename_list:
-                image = imageio.imread(filename)
-                writer.append_data(image)
+
+        images = []
+        for file_name in self._filename_list:
+                images.append(imageio.imread(file_name))
+        imageio.mimwrite(movie_name, images, format='.gif', fps=1)
+
+        # with imageio.get_writer(movie_name, mode='I') as writer:
+        #     for filename in self._filename_list:
+        #         image = imageio.imread(filename)
+        #         writer.append_data(image, meta=dict({'fps': 0.5}))
 
 
