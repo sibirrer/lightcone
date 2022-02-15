@@ -16,7 +16,7 @@ animated lightcone simulation of gravitational lensing using `lenstronomy <https
 .. _Contributor Guidelines: https://lightcone_lenstronomy.readthedocs.io/en/latest/developer/contributing.html
 
 
-.. |Read the Docs| image:: https://readthedocs.org/projects/lightcone/badge/?version=latest
+.. |Read the Docs| image:: https://readthedocs.org/projects/lightcone_lenstronomy/badge/?version=latest
     :target: https://lightcone_lenstronomy.readthedocs.io/en/latest/?badge=latest
     :alt: Documentation Status
 
