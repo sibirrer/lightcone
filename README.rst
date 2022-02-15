@@ -2,10 +2,12 @@
 lightcone
 =========
 
+.. image:: https://github.com/sibirrer/lightcone/docs/_static/example.gif
+.. contents::
 
 |Read the Docs| |GitHub| |Coveralls|
 
-animated lightcone simulation of gravitational lensing using lenstronomy
+animated lightcone simulation of gravitational lensing using `lenstronomy <https://github.com/sibirrer/lenstronomy>`_ .
 
 
 * Free software: BSD license

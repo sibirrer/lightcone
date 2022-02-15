@@ -19,6 +19,7 @@ class Plot3d(object):
     """
 
     def __init__(self, kwargs_model, kwargs_lens, kwargs_source, kwargs_pixel_grid, n_z_bins):
+        self._n_z_bins = n_z_bins
         z_source = kwargs_model.get('z_source')
         z_lens = kwargs_model.get('z_lens', None)
         # if no particular lens redshift is set, then takes the first element in the lens_redshift_list_setting
@@ -30,8 +31,9 @@ class Plot3d(object):
             cosmo = default_cosmology.get()
         self._z_list = np.linspace(0, z_source, n_z_bins, endpoint=True)
         self._comoving_z = cosmo.comoving_distance(self._z_list).value
-        self._comoving_zl = cosmo.comoving_distance(z_lens).value
+
         self._comoving_zs = self._comoving_z[-1]
+        self._comoving_zl = self._comoving_zs / 2 # cosmo.comoving_distance(z_lens).value
 
         self._lens_model = MultiPlane(lens_model_list=kwargs_model.get('lens_model_list', None),
                                 z_source=z_source,
@@ -46,10 +48,13 @@ class Plot3d(object):
         theta_x = util.image2array(theta_x)
         theta_y = util.image2array(theta_y)
 
-        # thin-out the pixel grid
-        low_res_factor = 10
-        kwargs_ray_grid = {'nx': int(kwargs_pixel_grid['nx']/low_res_factor),
-                           'ny': int(kwargs_pixel_grid['ny']/low_res_factor),
+        # thinned-out the pixel grid
+        num_rays = 20
+        # pixel_width = self._pixel_grid.pixel_width
+        nx, ny = self._pixel_grid.num_pixel_axes
+        low_res_factor = nx / num_rays
+        kwargs_ray_grid = {'nx': num_rays,
+                           'ny': num_rays,
                            'ra_at_xy_0': kwargs_pixel_grid['ra_at_xy_0'],
                            'dec_at_xy_0': kwargs_pixel_grid['dec_at_xy_0'],
                            'transform_pix2angle': kwargs_pixel_grid['transform_pix2angle'] * low_res_factor}
@@ -66,6 +71,7 @@ class Plot3d(object):
         source_mapping = Image2SourceMapping(lensModel=lens_model_class, sourceModel=source_model_class)
 
         flux_image = source_mapping.image_flux_joint(theta_x, theta_y, kwargs_lens, kwargs_source, k=None)
+        flux_image[flux_image <= 10**(-10)] = 10**(-10)
         self._image = util.array2image(flux_image)
 
         # setting the frame
@@ -75,7 +81,7 @@ class Plot3d(object):
                                                          kwargs_source, k=None)
 
         # calculate source
-        self._xx_s, self._yy_s = np.meshgrid(np.linspace(self._min_x, self._max_x, 100), np.linspace(self._min_y, self._max_y, 100))
+        self._xx_s, self._yy_s = np.meshgrid(np.linspace(self._min_x, self._max_x, 200), np.linspace(self._min_y, self._max_y, 200))
 
         # angular coordinates in the source
         beta_x = self._xx_s / 1000 / self._comoving_zs / constants.arcsec
@@ -85,14 +91,16 @@ class Plot3d(object):
         # surface brightness in the source
         self._source = light_model.surface_brightness(beta_x, beta_y, kwargs_source)
 
-    def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True, alpha_lens=1):
+    def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True, alpha_lens=1,
+               alpha_source=1):
         """
 
         """
         ax = plt.axes(projection='3d')
-        ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([1., 0.3, 0.3, 1.]))
+        ax.get_proj = lambda: np.dot(Axes3D.get_proj(ax), np.diag([1., 0.5, 0.5, 1.]))
         ax.set_facecolor("black")
         ax.set_axis_off()
+        plt.style.use('dark_background')
 
         ax.view_init(angle1, angle2)
 
@@ -114,7 +122,7 @@ class Plot3d(object):
         if plot_source is True:
             Zs = self.ray_colors(flux=self._source)
             cset = ax.plot_surface(np.zeros_like(Zs) + self._comoving_zs, self._xx_s, self._yy_s,
-                                   facecolors=plt.cm.gist_heat(Zs), shade=False, zorder=0)
+                                   facecolors=plt.cm.gist_heat(Zs), shade=False, zorder=0, alpha=alpha_source)
 
         # plot light rays
         if plot_rays is True:
@@ -131,6 +139,7 @@ class Plot3d(object):
             Zl = self.ray_colors(flux=self._image)
             cset = ax.plot_surface(np.zeros_like(Zl) + self._comoving_zl, self._xx_l, self._yy_l, facecolors=plt.cm.gist_heat(Zl),
                                    shade=False, zorder=10, alpha=alpha_lens)
+        fig.tight_layout()
         return fig
 
     def frame_setting(self):
@@ -160,12 +169,12 @@ class Plot3d(object):
         """
         log_flux = np.log10(self._image)
         Z_max = np.max(log_flux)
-        Z_min = np.min(log_flux)
-        if Z_max - Z_min > 4:
-            Z_min = Z_max - 4
+        Z_min = max(np.min(log_flux), -10)
+        if Z_max - Z_min > 3:
+            Z_min = Z_max - 3
 
         # normalize Z to [0..1]
-        Z = np.log10(flux) - Z_min
+        Z = np.log10(np.maximum(flux, 10**(-10))) - Z_min
         Z = np.maximum(Z, 0)
         Z = Z / (Z_max - Z_min)
         return Z
