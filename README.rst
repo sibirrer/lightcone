@@ -2,7 +2,7 @@
 lightcone
 =========
 
-.. image:: https://github.com/sibirrer/lightcone/docs/_static/example.gif
+.. image:: https://github.com/sibirrer/lightcone/blob/main/docs/_static/example.gif
 .. contents::
 
 |Read the Docs| |GitHub| |Coveralls|
