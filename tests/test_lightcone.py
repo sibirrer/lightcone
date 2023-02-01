@@ -3,9 +3,9 @@
 """Tests for `lightcone` package."""
 
 import pytest
-
-
-from lightcone import lightcone
+from lightcone import animated
+from lightcone import plot_3d
+from lightcone import plot_setting
 
 
 @pytest.fixture
