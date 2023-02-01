@@ -19,7 +19,17 @@ class Plot3d(object):
     """
 
     def __init__(self, kwargs_model, kwargs_lens, kwargs_source, kwargs_pixel_grid, n_z_bins):
+        """
+
+        :param kwargs_model: keyword arguments of the lenstronomy models in same format as lenstronomy uses it
+        :param kwargs_lens: keyword argument list of the lens model parameters in lenstronomy conventions
+        :param kwargs_source: keyword argument list of the extended source surface brightness model parameters in
+         lenstronomy conventions
+        :param kwargs_pixel_grid: keyword arguments that go into the lenstronomy PixelGrid() class instantization
+        :param n_z_bins: integer, number of redshift bins in the animation
+        """
         self._n_z_bins = n_z_bins
+        # TODO: make a raise statement demanding that kwargs_model needs a keyword 'z_source' to be the source redshift
         z_source = kwargs_model.get('z_source')
         z_lens = kwargs_model.get('z_lens', None)
         # if no particular lens redshift is set, then takes the first element in the lens_redshift_list_setting
@@ -94,6 +104,17 @@ class Plot3d(object):
     def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True, alpha_lens=1,
                alpha_source=1):
         """
+        3d plot of a ray shooting state with (partially) complete rays
+
+        :param fig: matplotlib figure class
+        :param angle1: float, rotation angle under which the ray-shooting animation is projected
+        :param angle2: float, rotation angle under which the ray-shooting animation is projected
+        :param n_ray: integer, step from which to the source the light rays are displayed
+        :param plot_source: boolean, if True, plots the source
+        :param plot_lens: boolean, if True, plots lens
+        :param plot_rays: boolean, if True, plots light rays (to n_ray step)
+        :param alpha_lens: float in [0, 1], transparency of the lens
+        :param alpha_source: float in [0, 1], transparency of the source
 
         """
         ax = plt.axes(projection='3d')
@@ -146,8 +167,6 @@ class Plot3d(object):
         """
         calculates minimum and maximum range of plot in units co-moving kpc in projected axis
 
-        :param pixel_grid: PixelGrid() instance of lenstronomy
-        :param comoving_zl: comoving distance to z_lens
         :return: min_x, max_x, min_y, max_y
         """
         min_x, max_x, mean_x = np.min(self._xx_l), np.max(self._xx_l), np.mean(self._xx_l)
@@ -178,4 +197,3 @@ class Plot3d(object):
         Z = np.maximum(Z, 0)
         Z = Z / (Z_max - Z_min)
         return Z
-

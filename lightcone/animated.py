@@ -12,6 +12,7 @@ class Animate(Plot3d):
     """
     def __init__(self, movie_name, folder_path, **kwargs_plot3d):
         """
+
         :param movie_name: string, name of movie (<movie_name>.mp4)
         :param folder_path: path to folder
         :param kwargs_plot3d: keyword arguments to initiate Plot3d class
@@ -25,11 +26,19 @@ class Animate(Plot3d):
     def _filename(self, i_frame):
         """
 
+        :param i_frame: integer, frame number
+        :return: full filename the frame should be saved
+        :rtype: string
         """
-        filename = self._folder_path + self._movie_name + str(self._i_frame) + '.png'
+        filename = self._folder_path + self._movie_name + str(i_frame) + '.png'
         return filename
 
     def ray_shooting(self, angle1, angle2):
+        """
+
+        :param angle1: float, rotation angle under which the ray-shooting animation is projected
+        :param angle2: float, rotation angle under which the ray-shooting animation is projected
+        """
         # ray-trace
         n_list = np.linspace(0, self._n_z_bins - 1, self._n_z_bins)
         for n in n_list[::-1]:
@@ -50,6 +59,12 @@ class Animate(Plot3d):
             self._filename_list.append(filename)
 
     def rotate_to_front(self, angle1, angle2, n_rotate=100):
+        """
+        rotate a static simulation with different transparency to be in direct projection to the fron
+
+        :param angle1: float, angle of the start of the rotation
+        :param angle2: float, angle of the start of the rotation
+        """
         angle1_front = 0
         angle2_front = -180
 
@@ -76,6 +91,12 @@ class Animate(Plot3d):
             self._filename_list.append(filename)
 
     def mp4(self, fps=20):
+        """
+        runs ffmpeg
+
+        :param fps: integer, frames per second
+        :return: saved mp4 file of the animation of all saved files in order
+        """
 
         def save():
             os_string = "ffmpeg -r " + str(fps) + " -i " + self._folder_path + self._movie_name + \
@@ -104,10 +125,3 @@ class Animate(Plot3d):
         for file_name in self._filename_list:
                 images.append(imageio.imread(file_name))
         imageio.mimwrite(movie_name, images, format='.gif', fps=1)
-
-        # with imageio.get_writer(movie_name, mode='I') as writer:
-        #     for filename in self._filename_list:
-        #         image = imageio.imread(filename)
-        #         writer.append_data(image, meta=dict({'fps': 0.5}))
-
-
