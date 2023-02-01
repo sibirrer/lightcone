@@ -1,14 +1,15 @@
 import os
-import imageio
 import numpy as np
 import lightcone
-import scipy.ndimage
-from lenstronomy.Util import image_util
 
 
 def import_galaxy(galaxy_name='ngc1300', size=0.5):
     """
-    import galaxy interpolated in lenstronomy configurations
+    import galaxy interpolated in lenstronomy configurations that is pre-stored in the lightcone repository
+
+    :param galaxy_name: name of galaxy (consistent with filename)
+    :type galaxy_name: string
+    :param size: width of image in angular units of arc seconds as seen without lensing at the source position
     """
 
     # find path to data
