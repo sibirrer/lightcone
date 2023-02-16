@@ -103,7 +103,7 @@ class Animate(Plot3d):
                         "%01d.png -vcodec mpeg4 -y " + self._folder_path + self._movie_name + ".mp4"
             os.system(os_string)
 
-        save()
+        return save()
 
     def finish(self):
         # Remove files
