@@ -5,6 +5,7 @@ import os
 from os.path import exists
 import matplotlib.pyplot as plt
 import imageio
+import warnings
 
 
 class Animate(Plot3d):
@@ -111,7 +112,7 @@ class Animate(Plot3d):
         movie_file = self.movie_name()
         file_exists = exists(movie_file)
         if not file_exists:
-            print("WARNING!: MP4 File not detected. Make sure you have FFMPEG installed and in your PATH.")
+            warnings.warn("WARNING!: MP4 File not detected. Make sure you have FFMPEG installed and in your PATH.")
 
     def finish(self):
         # Remove files

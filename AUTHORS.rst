@@ -7,7 +7,7 @@ Development Lead
 
 * Simon Birrer <sibirrer@gmail.com>
 
-Contributors
+Current Contributors
 ------------
 
-None yet. Why not be the first?
+* Jonathan Benz `JonathanBenz <https://github.com/JonathanBenz/>`_
