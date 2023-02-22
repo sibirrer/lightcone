@@ -1,8 +1,11 @@
 from lightcone.plot_3d import Plot3d
+from tqdm import tqdm
 import numpy as np
 import os
+from os.path import exists
 import matplotlib.pyplot as plt
 import imageio
+import warnings
 
 
 class Animate(Plot3d):
@@ -41,7 +44,7 @@ class Animate(Plot3d):
         """
         # ray-trace
         n_list = np.linspace(0, self._n_z_bins - 1, self._n_z_bins)
-        for n in n_list[::-1]:
+        for n in tqdm(n_list[::-1], desc="Loading ray shooting…", ascii=False, ncols=75):
             plt.ioff()
             fig = plt.figure()
             fig = self.plot3d(fig=fig, angle1=angle1, angle2=angle2, n_ray=int(n), plot_source=True, plot_lens=False,
@@ -53,10 +56,11 @@ class Animate(Plot3d):
             plt.savefig(fname=filename, dpi=96)
             plt.gca()
             plt.close(fig)
-            if self._i_frame % 10 == 0:
-                print(self._i_frame)
+            # if self._i_frame % 10 == 0:
+            #     print(self._i_frame)
             self._i_frame += 1
             self._filename_list.append(filename)
+        print("Ray shooting complete!")
 
     def rotate_to_front(self, angle1, angle2, n_rotate=100):
         """
@@ -74,7 +78,7 @@ class Animate(Plot3d):
         # alpha_lens_list = np.logspace(-4.5, 0, n_rotate)
         # alpha_lens_list = np.zeros(int(n_rotate*0.8))
         alpha_lens_list = np.append(np.zeros(int(n_rotate*0.3)), np.logspace(-2, 0, n_rotate - int(n_rotate*0.3)))
-        for n in range(n_rotate):
+        for n in tqdm(range(n_rotate), desc="Loading rotate to front…", ascii=False, ncols=75):
             plt.ioff()
             fig = plt.figure()
             fig = self.plot3d(fig=fig, angle1=angle1_list[n], angle2=angle2_list[n], alpha_lens=alpha_lens_list[n],
@@ -85,10 +89,11 @@ class Animate(Plot3d):
             plt.savefig(fname=filename, dpi=96)
             plt.gca()
             plt.close(fig)
-            if self._i_frame % 10 == 0:
-                print(self._i_frame)
+            # if self._i_frame % 10 == 0:
+            #     print(self._i_frame)
             self._i_frame += 1
             self._filename_list.append(filename)
+        print("Rotate to front complete!")
 
     def mp4(self, fps=20):
         """
@@ -104,6 +109,10 @@ class Animate(Plot3d):
             os.system(os_string)
 
         save()
+        movie_file = self.movie_name()
+        file_exists = exists(movie_file)
+        if not file_exists:
+            warnings.warn("WARNING!: MP4 File not detected. Make sure you have FFMPEG installed and in your PATH.")
 
     def finish(self):
         # Remove files

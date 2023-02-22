@@ -4,6 +4,7 @@ scipy
 matplotlib
 astropy
 imageio
+tqdm
 # TODO: checking for a recent version of paltas
 paltas
 # -e git://github.com/swagnercarena/paltas.git#egg=paltas
