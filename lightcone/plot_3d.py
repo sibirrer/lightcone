@@ -1,7 +1,9 @@
 import numpy as np
 from lightcone import ray_trace
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D
+from PIL import Image as im
 
 
 from lenstronomy.LensModel.MultiPlane.multi_plane import MultiPlane
@@ -9,8 +11,11 @@ from lenstronomy.Data.pixel_grid import PixelGrid
 from lenstronomy.Util import util
 from lenstronomy.Util.class_creator import create_class_instances
 from lenstronomy.ImSim.image2source_mapping import Image2SourceMapping
+from lenstronomy.SimulationAPI.sim_api import SimAPI
 from lenstronomy.LightModel.light_model import LightModel
 from lenstronomy.Util import constants
+
+from paltas.Configs.config_handler import ConfigHandler
 
 
 class Plot3d(object):
@@ -28,6 +33,9 @@ class Plot3d(object):
         :param kwargs_pixel_grid: keyword arguments that go into the lenstronomy PixelGrid() class instantization
         :param n_z_bins: integer, number of redshift bins in the animation
         """
+        self.kwargs_model = kwargs_model
+        self.kwargs_source = kwargs_source
+        self.kwargs_pixel_grid = kwargs_pixel_grid
         self._n_z_bins = n_z_bins
         # TODO: make a raise statement demanding that kwargs_model needs a keyword 'z_source' to be the source redshift
         z_source = kwargs_model.get('z_source')
@@ -101,8 +109,8 @@ class Plot3d(object):
         # surface brightness in the source
         self._source = light_model.surface_brightness(beta_x, beta_y, kwargs_source)
 
-    def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True, alpha_lens=1,
-               alpha_source=1):
+    def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True,
+               alpha_lens=1, alpha_source=1):
         """
         3d plot of a ray shooting state with (partially) complete rays
 
@@ -133,6 +141,7 @@ class Plot3d(object):
         # ax.set_ylabel('[kpc]')
         # ax.set_zlabel('[kpc]')
         ax.grid(False)
+        ax.set_box_aspect(aspect=[1, 1, 1])
 
         ax.set_xlim([0, np.max(self._comoving_z)])
         ax.set_ylim([self._min_x, self._max_x])
@@ -160,6 +169,7 @@ class Plot3d(object):
             Zl = self.ray_colors(flux=self._image)
             cset = ax.plot_surface(np.zeros_like(Zl) + self._comoving_zl, self._xx_l, self._yy_l, facecolors=plt.cm.gist_heat(Zl),
                                    shade=False, zorder=10, alpha=alpha_lens)
+
         fig.tight_layout()
         return fig
 
@@ -197,3 +207,113 @@ class Plot3d(object):
         Z = np.maximum(Z, 0)
         Z = Z / (Z_max - Z_min)
         return Z
+
+    def sim_source_with_noise(self, config_handler, sample):
+        """
+        Simulates image the observer would see from the detector with appropriate noise from a Paltas simulated image
+
+        :param config_handler: ConfigHandler object used for Paltas configuration file. Need to import ConfigHandler
+         from paltas.Configs.config_handler and initialize the ConfigHandler
+        :param sample: dict of config_handler.get_current_sample()
+        :return: numpy.ndarray of simulated image with noise data in flux / pixel
+        """
+        num_pix = 100 #config_handler.numpix
+        kwargs_numerics = config_handler.kwargs_numerics
+
+        kwargs_band = sample['detector_parameters']
+        kwargs_band['psf_type'] = sample['psf_parameters']['psf_type']
+        kwargs_band['seeing'] = sample['psf_parameters']['fwhm']
+
+        self.kwargs_model.pop('multi_plane', None)
+        kwargs_lens = sample['main_deflector_parameters']
+        if 'z_lens' not in self.kwargs_model:
+            self.kwargs_model['z_lens'] = kwargs_lens.pop('z_lens')
+
+        sim = SimAPI(numpix=num_pix, kwargs_single_band=kwargs_band, kwargs_model=self.kwargs_model)
+        im_sim = sim.image_model_class(kwargs_numerics)
+
+        kwargs_lens.pop('M200', None)
+
+        kwargs_lens = [
+            {'theta_E': kwargs_lens['theta_E'], 'e1': kwargs_lens['e1'], 'e2': kwargs_lens['e2'],
+             'gamma': kwargs_lens['gamma'],
+             'center_x': kwargs_lens['center_x'], 'center_y': kwargs_lens['center_y']},  # EPL model
+            {'gamma1': kwargs_lens['gamma1'], 'gamma2': kwargs_lens['gamma2'],
+             'ra_0': kwargs_lens['ra_0'], 'dec_0': kwargs_lens['dec_0']}  # SHEAR model
+        ]
+
+        image = im_sim.image(kwargs_lens, self.kwargs_source)
+        image += sim.noise_for_model(model=image)
+
+        sim_max = image.max()
+        plot3d_max = self._image.max()
+        scale_val = plot3d_max / sim_max
+        image *= scale_val
+
+        image = self.ray_colors(flux=image)
+
+        return image
+
+    def convert_arr_to_RGB_Im(self, arr, dpi=100, resize_shape=(100,100)):
+        """
+        Converts 2D numpy array data into a PIL image with RGB values. This can be used to resize the data's shape,
+        e.g. from a 400x400 to a 100x100
+
+        :param arr: 2D numpy.ndarray data needed to be converted into a PIL image and resized
+        :param dpi: float dots (pixels) per inch
+        :param resize_shape: tuple object which specifies the new shape that the image should become resized to
+        :return: PIL image with RGB values of arr
+        """
+        ypixels, xpixels = arr.shape
+        xinch = xpixels / dpi
+        yinch = ypixels / dpi
+
+        plt.ioff()
+        fig = plt.figure(figsize=(xinch, yinch))
+        ax = plt.axes([0., 0., 1., 1.], frameon=False, xticks=[], yticks=[])
+
+        canvas = FigureCanvas(fig)
+
+        ax.set_facecolor("black")
+        plt.style.use('dark_background')
+
+        plt.imshow(arr, cmap='gist_heat', aspect='equal', alpha=1, origin='lower')
+
+        canvas.draw()
+
+        # Gives the ndarray RGB values
+        arr_rgb_data = np.frombuffer(canvas.tostring_rgb(), dtype='uint8')
+        arr_rgb_data = arr_rgb_data.reshape((fig.canvas.get_width_height()[::-1] + (3,)))
+
+        # Converts ndarray to PIL image
+        image_rgb_data = im.fromarray(arr_rgb_data)
+        # Resizes the PIL image data
+        image_rgb_data = image_rgb_data.resize(resize_shape, im.Resampling.LANCZOS)
+
+        plt.close(fig)
+
+        return image_rgb_data
+
+    def match_2d_plot_to_3d_plot(self, fig, plot_2d, alpha=1):
+        """
+        Matches the 2d imaged plots created from the convert_arr_to_RGB_Im() method to the plot3d() plot. This was
+        extremely fine-tuned to match a specific case from the test_config. Not sure if this works with other cases.
+
+        :param fig: matplotlib figure class
+        :param plot_2d: PIL image (or 2D np.ndarray) used to match the position of the plot3d() plot
+        :param alpha: float transparency value. 0 is invisible, 1 is fully visible
+        """
+        # ratio between canvasWidth and 3dplot x_data
+        scale = fig.get_size_inches()[0] / self._max_x
+        # Fine-tuned parameters
+        ax = plt.axes([0.375, 0.375, (0.25 + scale)/2, (0.25 + scale)/2], frameon=False, xticks=[], yticks=[])
+        # If np.diag([1., 1., 1., 1.]) instead of np.diag([1., 0.5, 0.5, 1.]) from plot3d(), then
+        # ax = plt.axes([0.24, 0.24, 0.25 + scale, 0.25 + scale], frameon=False, xticks=[], yticks=[])
+
+        ax.set_facecolor("black")
+        plt.style.use('dark_background')
+
+        plt.imshow(plot_2d, cmap='gist_heat', aspect='equal', alpha=alpha)
+        ax.invert_xaxis()
+
+        return fig

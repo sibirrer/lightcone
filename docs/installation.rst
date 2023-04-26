@@ -60,3 +60,10 @@ After downloading, make sure you include the FFMPEG binary directory (e.g. C:\\u
 
 On Windows you can edit your environment variables and edit your Path to add to it. You may want to restart your PC after doing so too.
 
+Paltas
+------
+If using Paltas with Lightcone, the following catalog should be downloaded:
+
+* COSMOS 23.5 Magnitude Catalog: https://github.com/GalSim-developers/GalSim/wiki/RealGalaxy%20Data
+
+After downloading and unzipping the catalog, make sure you go into the config file (e.g. test_config.py) and assign the cosmos_folder variable to the path name of where you unzipped the catalog.
