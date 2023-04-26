@@ -2,12 +2,8 @@
 Credits
 =======
 
-Development Lead
-----------------
+Developers
+----------
 
-* Simon Birrer <sibirrer@gmail.com>
-
-Current Contributors
-------------
-
+* Simon Birrer `sibirrer <https://github.com/sibirrer/>`_
 * Jonathan Benz `JonathanBenz <https://github.com/JonathanBenz/>`_
