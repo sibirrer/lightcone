@@ -36,11 +36,12 @@ class Animate(Plot3d):
         filename = self._folder_path + self._movie_name + str(i_frame) + '.png'
         return filename
 
-    def ray_shooting(self, angle1, angle2):
+    def ray_shooting(self, angle1, angle2, dpi=96):
         """
 
         :param angle1: float, rotation angle under which the ray-shooting animation is projected
         :param angle2: float, rotation angle under which the ray-shooting animation is projected
+        :param dpi: float, dots (pixels) per inch
         """
         # ray-trace
         n_list = np.linspace(0, self._n_z_bins - 1, self._n_z_bins)
@@ -53,7 +54,7 @@ class Animate(Plot3d):
 
             # Save it & close the figure
             filename = self._filename(self._i_frame)
-            plt.savefig(fname=filename, dpi=96)
+            plt.savefig(fname=filename, dpi=dpi)
             plt.gca()
             plt.close(fig)
             # if self._i_frame % 10 == 0:
@@ -62,12 +63,13 @@ class Animate(Plot3d):
             self._filename_list.append(filename)
         print("Ray shooting complete!")
 
-    def rotate_to_front(self, angle1, angle2, n_rotate=100):
+    def rotate_to_front(self, angle1, angle2, n_rotate=100, dpi=96):
         """
-        rotate a static simulation with different transparency to be in direct projection to the fron
+        rotate a static simulation with different transparency to be in direct projection to the front
 
         :param angle1: float, angle of the start of the rotation
         :param angle2: float, angle of the start of the rotation
+        :param dpi: float, dots (pixels) per inch
         """
         angle1_front = 0
         angle2_front = -180
@@ -86,7 +88,7 @@ class Animate(Plot3d):
                               alpha_source=1-alpha_lens_list[n])
             # Save it & close the figure
             filename = self._filename(self._i_frame)
-            plt.savefig(fname=filename, dpi=96)
+            plt.savefig(fname=filename, dpi=dpi)
             plt.gca()
             plt.close(fig)
             # if self._i_frame % 10 == 0:
@@ -94,6 +96,52 @@ class Animate(Plot3d):
             self._i_frame += 1
             self._filename_list.append(filename)
         print("Rotate to front complete!")
+
+    def transition_to_noised_img(self, config_handler, sample, dpi=96):
+        """
+        After rotate_to_front(), this method can be called to transition the lensed image into what the observer would
+        expect to see from the CCD with expected noise.
+
+        :param config_handler: ConfigHandler object used for Paltas configuration file. Need to import ConfigHandler
+         from paltas.Configs.config_handler and initialize the ConfigHandler
+        :param sample: dict of config_handler.get_current_sample()
+        :param dpi: float, dots (pixels) per inch
+        """
+
+        # plot3d lens
+        Zl = self.ray_colors(flux=self._image)
+        # plot simulated observable lens with expected noise
+        img = self.sim_source_with_noise(config_handler=config_handler, sample=sample)
+
+        # Converting the plot3d lens to a 100x100 image
+        # as well as the simulated image with noise to keep both datatypes consistent (both become PIL images)
+        Zl_im = self.convert_arr_to_RGB_Im(Zl)
+        sim_im = self.convert_arr_to_RGB_Im(img)
+
+        # alpha_lens_list1 = np.linspace(0, 1, 20)
+        # alpha_lens_list2 = np.zeros(alpha_lens_list1.shape[0] * 2)
+        # alpha_lens_list2[-20:] = alpha_lens_list1
+        alpha_lens_list = np.ones(100)
+        alpha_lens_list[:80] = np.linspace(0, 1, 80)
+        for n in tqdm(range(alpha_lens_list.size), desc="transitioning…", ascii=False, ncols=75):
+            plt.ioff()
+            fig = plt.figure()
+            # if n < alpha_lens_list1.size:
+            #    fig = self.match_2d_plot_to_3d_plot(fig=fig, plot_2d=Zl_im, alpha=alpha_lens_list1[n])
+            # else:
+            #    fig = self.match_2d_plot_to_3d_plot(fig=fig, plot_2d=Zl_im, alpha=1)
+            fig = self.match_2d_plot_to_3d_plot(fig=fig, plot_2d=Zl_im, alpha=1)
+            fig = self.match_2d_plot_to_3d_plot(fig=fig, plot_2d=sim_im, alpha=alpha_lens_list[n])
+            # Save it & close the figure
+            filename = self._filename(self._i_frame)
+            plt.savefig(fname=filename, dpi=dpi)
+            plt.gca()
+            plt.close(fig)
+
+            self._i_frame += 1
+            self._filename_list.append(filename)
+
+        print("Transition to noised image complete!")
 
     def mp4(self, fps=20):
         """
@@ -126,11 +174,16 @@ class Animate(Plot3d):
         """
         return self._folder_path + self._movie_name + ".mp4"
 
-    def gif(self):
+    def gif(self, fps=1):
+        """
+        Creates a gif
+
+        :param fps: integer, frames per second
+        """
         # build gif
         movie_name = self._folder_path + self._movie_name + ".gif"
 
         images = []
         for file_name in self._filename_list:
-                images.append(imageio.imread(file_name))
-        imageio.mimwrite(movie_name, images, format='.gif', fps=1)
+            images.append(imageio.imread(file_name))
+        imageio.mimwrite(movie_name, images, format='.gif', fps=fps)
