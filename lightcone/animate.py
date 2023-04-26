@@ -65,7 +65,7 @@ class Animate(Plot3d):
 
     def rotate_to_front(self, angle1, angle2, n_rotate=100, dpi=96):
         """
-        rotate a static simulation with different transparency to be in direct projection to the fron
+        rotate a static simulation with different transparency to be in direct projection to the front
 
         :param angle1: float, angle of the start of the rotation
         :param angle2: float, angle of the start of the rotation
@@ -98,6 +98,15 @@ class Animate(Plot3d):
         print("Rotate to front complete!")
 
     def transition_to_noised_img(self, config_handler, sample, dpi=96):
+        """
+        After rotate_to_front(), this method can be called to transition the lensed image into what the observer would
+        expect to see from the CCD with expected noise.
+
+        :param config_handler: ConfigHandler object used for Paltas configuration file. Need to import ConfigHandler
+         from paltas.Configs.config_handler and initialize the ConfigHandler
+        :param sample: dict of config_handler.get_current_sample()
+        :param dpi: float, dots (pixels) per inch
+        """
 
         # plot3d lens
         Zl = self.ray_colors(flux=self._image)

@@ -52,6 +52,7 @@ Once you have a copy of the source, you can install it with:
 
 FFMPEG
 ------
+
 FFMPEG installation is required to create MP4 files of the animated lightcurves.
 
 * Free download: https://ffmpeg.org/download.html.
@@ -62,6 +63,15 @@ On Windows you can edit your environment variables and edit your Path to add to 
 
 Paltas
 ------
+
+To install Paltas, run this command in your terminal:
+
+.. code-block:: console
+
+    $ pip install paltas
+
+Lightcone currently uses Paltas version 0.1.1.
+
 If using Paltas with Lightcone, the following catalog should be downloaded:
 
 * COSMOS 23.5 Magnitude Catalog: https://github.com/GalSim-developers/GalSim/wiki/RealGalaxy%20Data
