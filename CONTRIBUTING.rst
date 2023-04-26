@@ -130,7 +130,7 @@ Open a Pull Request
 
 When you feel that work on your new feature is complete, you should create a *Pull Request*. This will propose your work to be merged into the main sim-pipeline repository.
 
-  1. Go to `lightcone Pull Requests <https://github.com/sibirrer/slightcone/pulls>`_
+  1. Go to `lightcone Pull Requests <https://github.com/sibirrer/lightcone/pulls>`_
   2. Click the green **New pull request** button
   3. Click **compare across forks**
   4. Confirm that the base fork is ``sibirrer/lightcone`` and the base branch is ``main``
