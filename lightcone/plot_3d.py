@@ -54,9 +54,9 @@ class Plot3d(object):
         self._comoving_zl = self._comoving_zs / 2 # cosmo.comoving_distance(z_lens).value
 
         self._lens_model = MultiPlane(lens_model_list=kwargs_model.get('lens_model_list', None),
-                                z_source=z_source,
-                                lens_redshift_list=kwargs_model.get('lens_redshift_list'),
-                                cosmo=cosmo)
+                                      z_source=z_source,
+                                      lens_redshift_list=kwargs_model.get('lens_redshift_list'),
+                                      cosmo=cosmo)
         # initiate pixel grid
         self._pixel_grid = PixelGrid(**kwargs_pixel_grid)
         theta_x, theta_y = self._pixel_grid.pixel_coordinates
