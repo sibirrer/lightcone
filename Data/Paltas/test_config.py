@@ -19,7 +19,7 @@ mag_cut = 2.0
 output_ab_zeropoint = 25.127
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
-cosmos_folder = r'C:\Users\jon\lightconeTests\cosmos\COSMOS_23.5_training_sample'
+cosmos_folder = r'C:\Users\zombi\lightconeTests\cosmos\COSMOS_23.5_training_sample'
 
 config_dict = {
 	'main_deflector':{
