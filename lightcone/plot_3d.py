@@ -329,43 +329,21 @@ class Plot3d(object):
 
         return fig
 
-    def color_lens_and_source(self, config_handler, sample, noised_image=True, artifact_image=False):
+    def color_lens_and_source(self, image, image_lens, image_source):
         """
         Colors the source galaxy blue and the lens galaxy yellow
 
-        :param config_handler: ConfigHandler object used for Paltas configuration file. Need to import ConfigHandler
-         from paltas.Configs.config_handler and initialize the ConfigHandler
-        :param sample: dict of config_handler.get_current_sample()
-        :param noised_image: if True, return the colored noised image via self.sim_source_with_noise()
-        :param artifact_image: if True, return the artifacted image. Same image as Zl from self.plot3d()
-        :return: numpy.ndarray of either the noised image, artifacted image, or both, with the source colored blue and
-        the lens colored yellow
+        :param image: numpy.ndarray of both the lens and the source galaxy
+        :param image_lens: numpy.ndarray of just the lens galaxy
+        :param image_source: numpy.ndarray of just the source galaxy
+        :return: numpy.ndarray with the source galaxy colored blue and the lens galaxy colored yellow
         """
-
-        image = self.sim_source_with_noise(config_handler=config_handler, sample=sample)
-        image_lens_only = self.sim_source_with_noise(config_handler=config_handler, sample=sample,
-                                                     source_add=False)
-        image_source_only = self.sim_source_with_noise(config_handler=config_handler, sample=sample,
-                                                       lens_light_add=False)
-        rgb_r = image_lens_only
+        rgb_r = image_lens
         rgb_g = image
-        rgb_b = image_source_only
+        rgb_b = image_source
         rgb_image = make_lupton_rgb(rgb_r, rgb_g, rgb_b, stretch=0.5)
 
-        Zl = self.ray_colors(flux=self._image)
-        Zl_no_source = self.ray_colors(flux=self._image_no_source)
-        Zl_no_lens = self.ray_colors(flux=self._image_no_lens)
-        rgb_r = Zl_no_source
-        rgb_g = Zl
-        rgb_b = Zl_no_lens
-        rgb_Zl = make_lupton_rgb(rgb_r, rgb_g, rgb_b, stretch=0.5)
-
-        if noised_image is True and artifact_image is False:
-            return rgb_image
-        elif artifact_image is True and noised_image is False:
-            return rgb_Zl
-        else:
-            return rgb_image, rgb_Zl
+        return rgb_image
 
 
 
