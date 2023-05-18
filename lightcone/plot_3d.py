@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from mpl_toolkits.mplot3d import Axes3D
 from PIL import Image as im
+from astropy.visualization import make_lupton_rgb
 
 
 from lenstronomy.LensModel.MultiPlane.multi_plane import MultiPlane
@@ -23,7 +24,7 @@ class Plot3d(object):
     class to manage plotting settings for 3d plot
     """
 
-    def __init__(self, kwargs_model, kwargs_lens, kwargs_source, kwargs_pixel_grid, n_z_bins):
+    def __init__(self, kwargs_model, kwargs_lens, kwargs_source, kwargs_pixel_grid, n_z_bins, kwargs_lens_light=None):
         """
 
         :param kwargs_model: keyword arguments of the lenstronomy models in same format as lenstronomy uses it
@@ -36,6 +37,7 @@ class Plot3d(object):
         self.kwargs_model = kwargs_model
         self.kwargs_source = kwargs_source
         self.kwargs_pixel_grid = kwargs_pixel_grid
+        self.kwargs_lens_light = kwargs_lens_light
         self._n_z_bins = n_z_bins
         # TODO: make a raise statement demanding that kwargs_model needs a keyword 'z_source' to be the source redshift
         z_source = kwargs_model.get('z_source')
@@ -89,8 +91,11 @@ class Plot3d(object):
         source_mapping = Image2SourceMapping(lensModel=lens_model_class, sourceModel=source_model_class)
 
         flux_image = source_mapping.image_flux_joint(theta_x, theta_y, kwargs_lens, kwargs_source, k=None)
+        flux_lens_light = lens_light_model_class.surface_brightness(theta_x, theta_y, kwargs_list=kwargs_lens_light)
         flux_image[flux_image <= 10**(-10)] = 10**(-10)
-        self._image = util.array2image(flux_image)
+        self._image = util.array2image(flux_image + flux_lens_light)
+        self._image_no_lens = util.array2image(flux_image)
+        self._image_no_source = util.array2image(flux_lens_light)
 
         # setting the frame
         self._min_x, self._max_x, self._min_y, self._max_y = self.frame_setting()
@@ -105,9 +110,9 @@ class Plot3d(object):
         beta_x = self._xx_s / 1000 / self._comoving_zs / constants.arcsec
         beta_y = self._yy_s / 1000 / self._comoving_zs / constants.arcsec
 
-        light_model = LightModel(light_model_list=kwargs_model.get('source_light_model_list', None))
+        #light_model = LightModel(light_model_list=kwargs_model.get('source_light_model_list', None))
         # surface brightness in the source
-        self._source = light_model.surface_brightness(beta_x, beta_y, kwargs_source)
+        self._source = source_model_class.surface_brightness(beta_x, beta_y, kwargs_source)
 
     def plot3d(self, fig, angle1, angle2, n_ray, plot_source=True, plot_lens=True, plot_rays=True,
                alpha_lens=1, alpha_source=1):
@@ -208,13 +213,15 @@ class Plot3d(object):
         Z = Z / (Z_max - Z_min)
         return Z
 
-    def sim_source_with_noise(self, config_handler, sample):
+    def sim_source_with_noise(self, config_handler, sample, source_add=True, lens_light_add=True):
         """
         Simulates image the observer would see from the detector with appropriate noise from a Paltas simulated image
 
         :param config_handler: ConfigHandler object used for Paltas configuration file. Need to import ConfigHandler
          from paltas.Configs.config_handler and initialize the ConfigHandler
         :param sample: dict of config_handler.get_current_sample()
+        :param source_add: if True, compute source, otherwise without
+        :param lens_light_add: if True, compute lens light, otherwise without
         :return: numpy.ndarray of simulated image with noise data in flux / pixel
         """
         num_pix = 100 #config_handler.numpix
@@ -224,12 +231,15 @@ class Plot3d(object):
         kwargs_band['psf_type'] = sample['psf_parameters']['psf_type']
         kwargs_band['seeing'] = sample['psf_parameters']['fwhm']
 
-        self.kwargs_model.pop('multi_plane', None)
+        kwargs_model = self.kwargs_model
+
+        kwargs_model.pop('multi_plane', None)
+
         kwargs_lens = sample['main_deflector_parameters']
         if 'z_lens' not in self.kwargs_model:
             self.kwargs_model['z_lens'] = kwargs_lens.pop('z_lens')
 
-        sim = SimAPI(numpix=num_pix, kwargs_single_band=kwargs_band, kwargs_model=self.kwargs_model)
+        sim = SimAPI(numpix=num_pix, kwargs_single_band=kwargs_band, kwargs_model=kwargs_model)
         im_sim = sim.image_model_class(kwargs_numerics)
 
         kwargs_lens.pop('M200', None)
@@ -242,7 +252,8 @@ class Plot3d(object):
              'ra_0': kwargs_lens['ra_0'], 'dec_0': kwargs_lens['dec_0']}  # SHEAR model
         ]
 
-        image = im_sim.image(kwargs_lens, self.kwargs_source)
+        image = im_sim.image(kwargs_lens, self.kwargs_source, self.kwargs_lens_light, source_add=source_add,
+                             lens_light_add=lens_light_add)
         image += sim.noise_for_model(model=image)
 
         sim_max = image.max()
@@ -317,3 +328,22 @@ class Plot3d(object):
         ax.invert_xaxis()
 
         return fig
+
+    def color_lens_and_source(self, image, image_lens, image_source):
+        """
+        Colors the source galaxy blue and the lens galaxy yellow
+
+        :param image: numpy.ndarray of both the lens and the source galaxy
+        :param image_lens: numpy.ndarray of just the lens galaxy
+        :param image_source: numpy.ndarray of just the source galaxy
+        :return: numpy.ndarray with the source galaxy colored blue and the lens galaxy colored yellow
+        """
+        rgb_r = image_lens
+        rgb_g = image
+        rgb_b = image_source
+        rgb_image = make_lupton_rgb(rgb_r, rgb_g, rgb_b, stretch=0.5)
+
+        return rgb_image
+
+
+
