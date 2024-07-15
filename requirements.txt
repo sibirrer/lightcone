@@ -10,6 +10,6 @@ paltas~=0.1.1
 # -e git://github.com/swagnercarena/paltas.git#egg=paltas
 
 
-pandas~=1.5.3
-setuptools~=65.5.1
+pandas
+setuptools
 Pillow>=10.0.1
